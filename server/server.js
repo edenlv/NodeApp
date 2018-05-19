@@ -25,7 +25,7 @@ app.use(morgan('dev'));
 
 var  superSecret = "SUMsumOpen"; // secret variable
 
-
+console.log("im here");
 // =======================
 // routes ================
 // =======================
