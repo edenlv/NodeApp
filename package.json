@@ -2,7 +2,7 @@
   "name": "nodeapp",
   "version": "1.0.0",
   "description": "EX3.2 back-end nodejs app",
-  "main": "server.js",
+  "main": "server/server.js",
   "dependencies": {
     "body-parser": "^1.18.2",
     "cors": "^2.8.4",
@@ -16,7 +16,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server/server.js"
   },
   "author": "eden",
   "license": "ISC"

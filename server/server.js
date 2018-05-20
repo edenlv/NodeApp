@@ -23,7 +23,7 @@ app.use(bodyParser.json());
 // use morgan to log requests to the console
 app.use(morgan('dev'));
 
-var  superSecret = "SUMsumOpen"; // secret variable
+const superSecret = "SUMsumOpen"; // secret variable
 
 console.log("im here");
 // =======================
@@ -52,10 +52,11 @@ app.use('/reg', function (req, res, next) {
             } else {
                 // if everything is good, save to request for use in other routes
                 // get the decoded payload and header
-                var decoded = jwt.decode(token, {complete: true});
-                req.decoded= decoded;
+                req.decoded = jwt.decode(token, {complete: true});
+
                 console.log(decoded.header);
-                console.log(decoded.payload)
+                console.log(decoded.payload);
+
                 next();
             }
         });
