@@ -1,10 +1,10 @@
-var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
-var morgan = require('morgan');
-var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
-var dbutils = require('../DButils');
-var util = require('util');
+var express     = require('express');
+var router      = express.Router();
+var bodyParser  = require('body-parser');
+var morgan      = require('morgan');
+var jwt         = require('jsonwebtoken'); // used to create, sign, and verify tokens
+var dbutils     = require('../DButils');
+var util        = require('util');
 
 
 
@@ -17,8 +17,19 @@ const superSecret = "SUMsumOpen"; // secret variable
  */
 router.post('/', function (req, res) {
 
-    var sTemplate = "INSERT INTO [User] VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')";
-    var sQuery = util.format(sTemplate, req.body.Username, req.body.Password, req.body.FirstName, req.body.LastName, req.body.City, req.body.Country, req.body.Question, req.body.Answer, req.body.Email);
+    var sTemplate = "INSERT INTO [User](Username, Password, FirstName, LastName, City, Country, Question, Answer, Email)"
+                + "VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
+    var sQuery = util.format(sTemplate,
+        req.body.Username,
+        req.body.Password,
+        req.body.FirstName,
+        req.body.LastName,
+        req.body.City,
+        req.body.Country,
+        req.body.Question,
+        req.body.Answer,
+        req.body.Email
+    );
     
     dbutils.execQuery(sQuery).then(
         oData => {
@@ -86,8 +97,8 @@ router.post('/getPWRestoreQuestion', function(req, res){
     if (!req.body.Username) {
         res.status(400).send({message: "You must enter a username"});
     } else {
-        var sTemplate = "SELECT Question FROM [User] WHERE Username='%s'";
-        var sQuery = util.format(sTemplate, req.body.Username);
+        var sTemplate   = "SELECT Question FROM [User] WHERE Username='%s'";
+        var sQuery      = util.format(sTemplate, req.body.Username);
 
         var ans = dbutils.execQuery(sQuery);
         ans.then(
@@ -110,9 +121,9 @@ router.post('/getPassword', function(req, res){
     if (!req.body.Username || !req.body.Answer){
         res.status(400).send({success: false, message: "You must enter a username and an answer."});
     } else {
-        var sTemplate = "SELECT Answer, Password FROM [User] WHERE Username='%s'";
-        var sQuery = util.format(sTemplate, req.body.Username);
-        var ans = dbutils.execQuery(sQuery);
+        var sTemplate   = "SELECT Answer, Password FROM [User] WHERE Username='%s'";
+        var sQuery      = util.format(sTemplate, req.body.Username);
+        var ans         = dbutils.execQuery(sQuery);
 
         ans.then(
             oData => {
@@ -131,6 +142,31 @@ router.post('/getPassword', function(req, res){
                 res.status(400).send(err);
             }
         )
+    }
+});
+
+router.get('/:username', function(req,res){
+    if (!req.params.username){
+        res.status(400).send({success: false, message: "Invalid username. Cannot GET /Users/:username"});
+    } else {
+        var sTemplate = "SELECT * FROM [User] WHERE Username='%s'";
+        var sQuery = util.format(sTemplate, req.params.username);
+        var ans = dbutils.execQuery(sQuery);
+        
+        ans.then(
+            oData => {
+                if (oData.count) {
+                    if (oData.result[0].Username === req.params.username){
+                        res.json({success: true, message: util.format("User %s exists.", req.params.username)});
+                    }
+                }
+            }
+        ).catch(
+            err => {
+                res.status(400).send(err);
+            }
+        )
+        
     }
 });
 

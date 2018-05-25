@@ -9,6 +9,7 @@ var morgan = require('morgan');
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 var Users = require('./server_modules/Users'); // get our users model
 var poi = require('./server_modules/POI')
+var pubpoi = require('./server_modules/PublicPOI');
 var dbutils = require('./DButils');
 // =======================
 // configuration =========
@@ -84,6 +85,7 @@ app.use('/reg', function (req, res, next) {
 
 app.use('/reg/poi', poi)
 app.use('/users', Users)
+app.use('/poi', pubpoi)
 
 
 

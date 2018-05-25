@@ -86,3 +86,8 @@ exports.execQuery = function (query) {
     });
 
 };
+
+exports.getDate = function () {
+    var d = new Date();
+    return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+}
