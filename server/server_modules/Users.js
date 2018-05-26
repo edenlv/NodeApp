@@ -17,9 +17,11 @@ const superSecret = "SUMsumOpen"; // secret variable
  */
 router.post('/', function (req, res) {
 
+    if (!isInputValid(req, res)) res.status(400).send({success: false, message: "INVALID INPUT. User was not created"});
+
     var sTemplate = "INSERT INTO [User](Username, Password, FirstName, LastName, City, Country, Question, Answer, Email)"
-                + "VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
-    var sQuery = util.format(sTemplate,
+                + " VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
+    var sQuery1 = util.format(sTemplate,
         req.body.Username,
         req.body.Password,
         req.body.FirstName,
@@ -30,11 +32,26 @@ router.post('/', function (req, res) {
         req.body.Answer,
         req.body.Email
     );
+
+    var sTemplate2 = "insert into UserCategory (Username, Category) values";
+    
+    req.body.Category.forEach(
+        (elem, idx) => {
+            sTemplate2 += util.format("('%s', '%s')", req.body.Username, elem)
+            if (idx !== req.body.Category.length-1) sTemplate2 += ","
+        }
+    )
+
+    var sQuery = "BEGIN TRANSACTION; " + sQuery1 + "; " + sTemplate2 + "; COMMIT";
     
     dbutils.execQuery(sQuery).then(
         oData => {
-            if (oData.count){
-                res.json({success: true, message: util.format("User %s was created successfully", req.body.Username)});
+            if (oData.count === req.body.Category.length+1){
+                res.json({
+                    success: true,
+                    message: util.format("User %s was created successfully", req.body.Username),
+                    message2: req.body.Category.length + " categories were added to the user."
+                });    
             } else {
                 res.status(400).send({success:false, message: "No row affected."});
             }
@@ -42,13 +59,14 @@ router.post('/', function (req, res) {
     )
     .catch(
         err => {
-            res.status(400).send({success:false, message: err});
+            res.status(400).send({success: false});
         }
-    )
-
-    /* TODO: Handle req.body.CategoryID[]
-    */
+    );
 });
+
+function isInputValid(req, res){
+    return true;
+}
 
 
 router.post('/login', function (req, res) {

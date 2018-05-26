@@ -75,14 +75,6 @@ app.use('/reg', function (req, res, next) {
 })
 
 
-
-
-
-
-
-
-
-
 app.use('/reg/poi', poi)
 app.use('/users', Users)
 app.use('/poi', pubpoi)

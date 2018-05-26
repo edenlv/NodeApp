@@ -7,12 +7,7 @@ var util        = require('util');
 
 
 router.get('/', function (req, res) {
-
-    
-
-    res.send ( {message: 'Welcome to area for registered users only!!'})
-
-
+    res.send ({message: 'Welcome to area for registered users only!!'})
 });
 
 router.post('/addreview', function (req, res) {
@@ -35,7 +30,7 @@ router.post('/addreview', function (req, res) {
                 if (oData.count){
                     res.status(200).send({success: true});
                 } else {
-                    res.status(400).send({success: false});
+                    res.status(400).send({success: false, message: err});
                 }
             }
         ).catch(
@@ -67,45 +62,140 @@ router.get('/lastsaved', function(req,res) {
     )
 });
 
-router.post('/setfav', function(req, res){
-    var fnErr = err => res.status(400).send(err);
+router.post('/setfav', function(req,res){
+    var username = req.decoded.payload.Username;
+    var fnError = err => res.status(400).send(err);
 
-    if (req.body.pois && req.body.pois.length){
-        var toDelete = [];
-        var toAdd = [];
-        var sTemplate;
-        req.body.pois.forEach(
-            oPoi => {
-                if (!oPoi.isFavorite) toDelete.push(oPoi);
-                else toAdd.push(oPoi);
-            }
-        );
+    if (req.body){
+        if (req.body.isFavorite === false){
 
-        var delQuer = "delete from favpoi where Username='" + req.decoded.payload.Username + "' AND PID IN (";
-        toDelete.forEach(
-            (oPoi, idx) => {
-                delQuery += oPoi.PID;
-                if (idx !== toDelete.length) delQuery += ", ";
-                else delQuery += ");";
-            }
-        );
+            var sTemplate = "delete from favpoi where Username='%s' and pid=%s";
+            var sQuery = util.format(sTemplate, username, req.body.PID);
+            var ans = dbutils.execQuery(sQuery);
 
-        var addQuery = "insert into favpoi (Username, PID, Order, DateSaved) values";
-        var auxDBQuery = dbutils.execQuery("select max([Order]) as [Order] from favpoi where Username='" + req.decoded.payload.Username + "'");
-        auxDBQuery.then(
-            oData => {
-                var orderCounter = oData.result[0].Order;
+            ans.then(
+                oData => {
+                    if (oData.count) res.json({success: true});
+                    else res.status(400).send({success: false, message: err});
+                }
+            ).catch(err => res.status(400).send(err));
 
-                toAdd.forEach(
-                    (oPoi, idx) => {
-                        addQuery += "('%s', '%s', '%s',"+ dbutils.getDate() +")"
-                        if (idx!==toAdd.length) addQuery += ", "
-                        else addQuery += ";";
-                    }
-                )
-            }
-        ).catch(fnErr);
+        } else {
+
+            var sTemplate = "insert into favpoi (Username, PID, [Order], DateSaved) values('%s', '%s', '%s', '%s')";
+            var auxQuery = util.format("select max([Order]) as maxOrder from favpoi where Username='%s'", username);
+            var auxAns = dbutils.execQuery(auxQuery);
+            auxAns.then(
+                oData => {
+                    var nextOrder = oData.result[0].maxOrder + 1;
+                    var sQuery = util.format(sTemplate, username, req.body.PID, nextOrder, dbutils.getDate());
+                    var ans = dbutils.execQuery(sQuery);
+
+                    ans.then(
+                        oData => {
+                            if (oData.count) res.json({success: true, message: util.format("POI Number %s was added to favorites!", req.body.PID)});
+                            else res.status(400).send({success: false, message: "Could not add to favorites"});
+                        }
+                    ).catch(
+                        err => {
+                            res.status(400).send({success: false, message: err});
+                        }
+                    );
+                }
+            ).catch(
+                err => {
+                    res.status(400).send({success: false, message: err});
+                }
+            );
+
+        }
     }
+
+});
+
+router.get('/favlist/count', function(req, res){
+    var sQuery = util.format("select count(pid) as Count from favpoi where username='%s'", req.decoded.payload.Username);
+    var ans = dbutils.execQuery(sQuery);
+
+    ans.then(
+        oData => {
+            if (oData.result && oData.result.length) res.json(oData.result[0]);
+            else res.status(400).send({success: false, message: err});
+        }
+    ).catch(
+        err => {
+            res.status(400).send({success: false, message: err});
+        }
+    );
+
+});
+
+router.post('/setfavorder', function(req,res){
+    var username = req.decoded.payload.Username;
+
+    if (req.body && req.body.length){
+        var sTemplateStart = "UPDATE favpoi SET [Order] = CASE [PID] ";
+        var sTemplateMid = "";
+        req.body.forEach(
+            (elem, idx) => {
+                sTemplateMid += util.format(" WHEN %s THEN %s", elem , idx);
+            }
+        );
+        var sTemplateEnd = util.format(" ELSE [Order] END WHERE Username='%s'", username);
+
+        var sQuery = sTemplateStart + sTemplateMid + sTemplateEnd;
+        var ans = dbutils.execQuery(sQuery);
+
+        ans.then(
+            oData => {
+                if (oData.count === req.body.length) res.json({success: true});
+                else res.status(400).send({success: false, message: "Request array length and DB answer row count do not match!"});
+            }
+        ).catch(
+            err => {
+                res.status(400).send({success: false, message: err});
+            }
+        );
+    }
+});
+
+router.get('/recommended', function(req, res){
+    var sTemplate = "select * from poi where pid="
+    +"(SELECT top 1 PID FROM POI WHERE Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 1) order by Rating desc)"
+    +"OR pid="
+    +"(SELECT top 1 PID FROM POI WHERE Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 2) order by Rating desc)";
+
+    var sQuery = util.format(sTemplate, req.decoded.payload.Username, req.decoded.payload.Username);
+
+    var ans = dbutils.execQuery(sQuery);
+
+    ans.then(
+        oData => {
+            if (oData.count === 2) res.json(oData.result);
+            else res.status(400).send({success: false, message: "Could not find recommended POIs for you."});
+        }
+    ).catch(
+        err => {
+            res.status(400).send({success: false, message: err});
+        }
+    );
+});
+
+router.get('/favlist', function(req,res) {
+    var sTemplate = "select poi.PID, [Views], Title, [Description], Category, Rating, Raters from poi, favpoi where Username='%s' and poi.pid=favpoi.pid order by [Order]";
+    var sQuery = util.format(sTemplate, req.decoded.payload.Username);
+    var ans = dbutils.execQuery(sQuery);
+
+    ans.then(
+        oData => {
+            if (oData.result.length) res.json(oData.result);
+            else res.json({success: true, message: "No favorite POIs were saved."});
+        }
+    ).catch(
+        err => {
+            res.status(400).send({success: false, error: err})
+        }
+    )
 });
 
 

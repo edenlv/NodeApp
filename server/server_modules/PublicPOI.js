@@ -15,7 +15,7 @@ router.get('/', function(req,res){
             if (oData.result.length) {
                 res.status(200).send(oData.result);
             } else {
-                res.status(400).send({success: false});
+                res.status(400).send({success: false, message: err});
             }
         }
     ).catch(
