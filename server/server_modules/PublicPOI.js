@@ -64,4 +64,21 @@ function getRandom(arr, n) {
     return result;
 }
 
+router.get('/:id', function(req, res){
+    var sTemplate = "select * from poi where pid='%s'";
+    var sQuery = util.format(sTemplate, req.param('id'));
+
+    var ans = dbutils.execQuery(sQuery);
+    ans.then(
+        oData => {
+            if (oData.result.length) res.json(oData.result[0]);
+            else res.json({success: true, message: 'No such POI. Invalid ID ' + req.param('id')})
+        }
+    ).catch(
+        err => {
+            res.status(400).send({message: false, error: err});
+        }
+    )
+})
+
 module.exports = router;
