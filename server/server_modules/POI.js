@@ -15,14 +15,23 @@ router.post('/addreview', function (req, res) {
     if (!req.body.PID || !req.body.Rating || !req.body.ReviewText){
         res.json({success: false, message: 'Bad input'});
     } else {
+        
         var sTemplate = "INSERT INTO Review (Username, PID, ReviewText, Rating, Date) VALUES('%s', '%s', N'%s', '%s', '%s')";
-        var sQuery = util.format(sTemplate,
+        var sQuery1 = util.format(sTemplate,
             req.decoded.payload.Username,
             req.body.PID,
             req.body.ReviewText,
             req.body.Rating,
             dbutils.getDate()
         );
+
+        
+        var sTemplate2 = "update poi set Rating=(((select Rating from poi where pid=%s)*(select Raters from poi where pid=%s))+%s)/((select Raters from poi where pid=%s)+1), " +
+                         "Raters=(select Raters from poi where pid=%s)+1 where pid=%s";
+        var sQuery2 = util.format(sTemplate2, req.body.PID, req.body.PID, req.body.Rating, req.body.PID, req.body.PID, req.body.PID);
+
+
+        var sQuery = "BEGIN TRANSACTION; " + sQuery1 + "; " + sQuery2 + "; COMMIT";
 
         var ans = dbutils.execQuery(sQuery);
         ans.then(

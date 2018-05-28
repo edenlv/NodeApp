@@ -5,7 +5,6 @@ var morgan      = require('morgan');
 var dbutils     = require('../DButils');
 var util        = require('util');
 
-//handlers go here
 
 router.get('/', function(req,res){
     var sQuery = "select * from poi"
@@ -32,6 +31,7 @@ router.get('/footer', function (req, res) {
     ans.then(
         oData => {
             if (oData.result.length <= 3){
+                
                 res.json(oData.result);
             } else {
                 var aPopulars = oData.result.filter(

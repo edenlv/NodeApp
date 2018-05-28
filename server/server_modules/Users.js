@@ -19,7 +19,7 @@ router.post('/', function (req, res) {
 
     if (!isInputValid(req, res)) res.status(400).send({success: false, message: "INVALID INPUT. User was not created"});
 
-    var sTemplate = "INSERT INTO [User](Username, Password, FirstName, LastName, City, Country, Question, Answer, Email)"
+    var sTemplate = "INSERT INTO [User](Username, Password, FirstName, LastName, City, Country, Question, Answer, Question2, Answer2, Email)"
                 + " VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
     var sQuery1 = util.format(sTemplate,
         req.body.Username,
@@ -30,6 +30,8 @@ router.post('/', function (req, res) {
         req.body.Country,
         req.body.Question,
         req.body.Answer,
+        req.body.Question2,
+        req.body.Answer2,
         req.body.Email
     );
 
@@ -163,6 +165,9 @@ router.post('/getPassword', function(req, res){
     }
 });
 
+/*
+ * For testing - user exists
+*/
 router.get('/:username', function(req,res){
     if (!req.params.username){
         res.status(400).send({success: false, message: "Invalid username. Cannot GET /Users/:username"});

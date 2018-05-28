@@ -92,4 +92,5 @@ exports.getDate = function () {
     return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
 }
 
+
 exports.fnError = err => res.status(400).send(err);
