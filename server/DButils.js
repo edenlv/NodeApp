@@ -77,7 +77,6 @@ exports.execQuery = function (query) {
 
                 });
                 connection.execSql(dbReq);
-
             });
         }
         catch (err) {

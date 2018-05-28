@@ -117,7 +117,7 @@ router.post('/getPWRestoreQuestion', function(req, res){
     if (!req.body.Username) {
         res.status(400).send({message: "You must enter a username"});
     } else {
-        var sTemplate   = "SELECT Question FROM [User] WHERE Username='%s'";
+        var sTemplate   = "SELECT Question, Question2 FROM [User] WHERE Username='%s'";
         var sQuery      = util.format(sTemplate, req.body.Username);
 
         var ans = dbutils.execQuery(sQuery);
@@ -138,17 +138,17 @@ router.post('/getPWRestoreQuestion', function(req, res){
 });
 
 router.post('/getPassword', function(req, res){
-    if (!req.body.Username || !req.body.Answer){
+    if (!req.body.Username || !req.body.Answer || !req.body.Answer2){
         res.status(400).send({success: false, message: "You must enter a username and an answer."});
     } else {
-        var sTemplate   = "SELECT Answer, Password FROM [User] WHERE Username='%s'";
+        var sTemplate   = "SELECT Answer, Answer2, Password FROM [User] WHERE Username='%s'";
         var sQuery      = util.format(sTemplate, req.body.Username);
         var ans         = dbutils.execQuery(sQuery);
 
         ans.then(
             oData => {
                 if (oData.count){
-                    if (oData.result[0].Answer === req.body.Answer){
+                    if (oData.result[0].Answer === req.body.Answer && oData.result[0].Answer2 === req.body.Answer2){
                         res.json({Password: oData.result[0].Password});
                     } else {
                         res.status(400).send({success: false, message: "Wrong answer!"});
