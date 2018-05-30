@@ -88,7 +88,7 @@ exports.execQuery = function (query) {
 
 exports.getDate = function () {
     var d = new Date();
-    return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+    return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
 }
 
 
