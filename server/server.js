@@ -53,7 +53,7 @@ app.use('/reg', function (req, res, next) {
             } else {
                 // if everything is good, save to request for use in other routes
                 // get the decoded payload and header
-                req.decoded = jwt.decode(token, {complete: true});
+                req.decoded = jwt.decode(token, { complete: true });
 
                 console.log(decoded.header);
                 console.log(decoded.payload);
@@ -84,4 +84,4 @@ app.use('/poi', pubpoi)
 // =======================
 // start the server ======
 // =======================
-app.listen(port, function(){ console.log('Magic happens at http://localhost:' + port); })
+app.listen(port, function () { console.log('Magic happens at http://localhost:' + port); })

@@ -71,57 +71,6 @@ router.get('/lastsaved', function(req,res) {
     )
 });
 
-router.post('/setfav', function(req,res){
-    var username = req.decoded.payload.Username;
-    var fnError = err => res.status(400).send(err);
-
-    if (req.body){
-        if (req.body.isFavorite === false){
-
-            var sTemplate = "delete from favpoi where Username='%s' and pid=%s";
-            var sQuery = util.format(sTemplate, username, req.body.PID);
-            var ans = dbutils.execQuery(sQuery);
-
-            ans.then(
-                oData => {
-                    if (oData.count) res.json({success: true});
-                    else res.status(400).send({success: false, message: err});
-                }
-            ).catch(err => res.status(400).send(err));
-
-        } else {
-
-            var sTemplate = "insert into favpoi (Username, PID, [Order], DateSaved) values('%s', '%s', '%s', '%s')";
-            var auxQuery = util.format("select max([Order]) as maxOrder from favpoi where Username='%s'", username);
-            var auxAns = dbutils.execQuery(auxQuery);
-            auxAns.then(
-                oData => {
-                    var nextOrder = oData.result[0].maxOrder + 1;
-                    var sQuery = util.format(sTemplate, username, req.body.PID, nextOrder, dbutils.getDate());
-                    var ans = dbutils.execQuery(sQuery);
-
-                    ans.then(
-                        oData => {
-                            if (oData.count) res.json({success: true, message: util.format("POI Number %s was added to favorites!", req.body.PID)});
-                            else res.status(400).send({success: false, message: "Could not add to favorites"});
-                        }
-                    ).catch(
-                        err => {
-                            res.status(400).send({success: false, message: err});
-                        }
-                    );
-                }
-            ).catch(
-                err => {
-                    res.status(400).send({success: false, message: err});
-                }
-            );
-
-        }
-    }
-
-});
-
 router.get('/favlist/count', function(req, res){
     var sQuery = util.format("select count(pid) as Count from favpoi where username='%s'", req.decoded.payload.Username);
     var ans = dbutils.execQuery(sQuery);
@@ -206,6 +155,113 @@ router.get('/favlist', function(req,res) {
         }
     )
 });
+
+router.post('/setfavs', function(req, res){
+    var delQuery = "delete from favpoi where Username='" + req.decoded.payload.Username + "' AND PID IN (";
+    var addQuery = "insert into favpoi (Username, PID, [Order], DateSaved) values";
+
+    if (req.body && req.body.length){
+        var hasAdd = false, hasDel = false;
+
+        req.body.forEach(
+            (elem, idx) => {
+                if (elem.isFavorite) {
+                    addQuery += util.format(
+                        "('%s', '%s', '%s', '%s'),",
+                        req.decoded.payload.Username,
+                        elem.PID,
+                        50,
+                        dbutils.getDate()
+                    );
+                    hasAdd = true;
+                } else {
+                    delQuery += util.format("'%s',", elem.PID);
+                    hasDel = true;
+                }
+            }
+        )
+
+        var sQuery = "BEGIN TRANSACTION; ";
+
+        if (hasDel) delQuery = delQuery.slice(0, delQuery.lastIndexOf(',')) + ")";
+        if (hasAdd) addQuery = addQuery.slice(0, addQuery.lastIndexOf(',')) + "";
+        
+        if (hasDel) sQuery += delQuery + "; ";
+        if (hasAdd) sQuery += addQuery + "; ";
+
+        sQuery += " COMMIT";
+
+        var ans = dbutils.execQuery(sQuery);
+
+        ans.then(
+            oData => {
+                if (oData.count === req.body.length){
+                    res.json({success: true, message: "Successfully set favorite POIs"});
+                } 
+                else {
+                    res.json({success: false});
+                }
+            }
+        ).catch(
+            err => {
+                res.status(500).send({success: false, error: err});
+            }
+        )
+    }
+
+});
+
+
+// router.post('/setfav', function(req,res){
+//     var username = req.decoded.payload.Username;
+//     var fnError = err => res.status(400).send(err);
+
+//     if (req.body){
+//         if (req.body.isFavorite === false){
+
+//             var sTemplate = "delete from favpoi where Username='%s' and pid=%s";
+//             var sQuery = util.format(sTemplate, username, req.body.PID);
+//             var ans = dbutils.execQuery(sQuery);
+
+//             ans.then(
+//                 oData => {
+//                     if (oData.count) res.json({success: true});
+//                     else res.status(400).send({success: false, message: err});
+//                 }
+//             ).catch(err => res.status(400).send(err));
+
+//         } else {
+
+//             var sTemplate = "insert into favpoi (Username, PID, [Order], DateSaved) values('%s', '%s', '%s', '%s')";
+//             var auxQuery = util.format("select max([Order]) as maxOrder from favpoi where Username='%s'", username);
+//             var auxAns = dbutils.execQuery(auxQuery);
+//             auxAns.then(
+//                 oData => {
+//                     var nextOrder = oData.result[0].maxOrder + 1;
+//                     var sQuery = util.format(sTemplate, username, req.body.PID, nextOrder, dbutils.getDate());
+//                     var ans = dbutils.execQuery(sQuery);
+
+//                     ans.then(
+//                         oData => {
+//                             if (oData.count) res.json({success: true, message: util.format("POI Number %s was added to favorites!", req.body.PID)});
+//                             else res.status(400).send({success: false, message: "Could not add to favorites"});
+//                         }
+//                     ).catch(
+//                         err => {
+//                             res.status(400).send({success: false, message: err});
+//                         }
+//                     );
+//                 }
+//             ).catch(
+//                 err => {
+//                     res.status(400).send({success: false, message: err});
+//                 }
+//             );
+
+//         }
+//     }
+
+// });
 
 
 module.exports = router;

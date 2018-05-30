@@ -20,7 +20,7 @@ router.post('/', function (req, res) {
     if (!isInputValid(req, res)) res.status(400).send({success: false, message: "INVALID INPUT. User was not created"});
 
     var sTemplate = "INSERT INTO [User](Username, Password, FirstName, LastName, City, Country, Question, Answer, Question2, Answer2, Email)"
-                + " VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
+                + " VALUES('%s', '%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', N'%s', '%s')";
     var sQuery1 = util.format(sTemplate,
         req.body.Username,
         req.body.Password,
@@ -61,7 +61,7 @@ router.post('/', function (req, res) {
     )
     .catch(
         err => {
-            res.status(400).send({success: false});
+            res.status(400).send({success: false, message: err});
         }
     );
 });

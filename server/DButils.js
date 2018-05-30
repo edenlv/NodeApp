@@ -93,3 +93,14 @@ exports.getDate = function () {
 
 
 exports.fnError = err => res.status(400).send(err);
+
+exports.calcFavorite = function(oData){
+    if (oData.result){
+        oData.result.forEach(
+            (elem, idx) => {
+                if (elem.Username) elem.isFavorite = true;
+                else elem.isFavorite = false;
+            }
+        )
+    }
+}

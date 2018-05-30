@@ -1,27 +1,63 @@
-var express     = require('express');
-var router      = express.Router();
-var bodyParser  = require('body-parser');
-var morgan      = require('morgan');
-var dbutils     = require('../DButils');
-var util        = require('util');
+var express = require('express');
+var router = express.Router();
+var bodyParser = require('body-parser');
+var morgan = require('morgan');
+var dbutils = require('../DButils');
+var util = require('util');
+var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 
+const superSecret = "SUMsumOpen"; // secret variable
 
-router.get('/', function(req,res){
-    var sQuery = "select * from poi"
+router.use('/', function (req, res, next) {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+    // decode token
+    if (token) {
+
+        // verifies secret and checks exp
+        jwt.verify(token, superSecret, function (err, decoded) {
+            if (err) {
+                return res.json({ success: false, message: 'Failed to authenticate token.' });
+            } else {
+                // if everything is good, save to request for use in other routes
+                // get the decoded payload and header
+                req.decoded = jwt.decode(token, { complete: true });
+
+                console.log(decoded.header);
+                console.log(decoded.payload);
+
+                next();
+            }
+        });
+
+    } else next();
+})
+
+router.get('/', function (req, res) {
+
+    var sQuery;
+
+    if (req.decoded && req.decoded.payload && req.decoded.payload.Username) {
+        sQuery = util.format("select poi.PID as PID, [Views], Title, [Description], Category, Rating, Raters, ImageFileName, Username, [Order], DateSaved from poi left join (select * from favpoi where Username='%s') as foo on poi.pid=foo.pid", req.decoded.payload.Username);
+    } else {
+        sQuery = "select * from poi"
+    }
+
     var ans = dbutils.execQuery(sQuery);
     ans.then(
         oData => {
+            dbutils.calcFavorite(oData);
             if (oData.result.length) {
                 res.status(200).send(oData.result);
             } else {
-                res.status(400).send({success: false, message: err});
+                res.status(400).send({ success: false, message: err });
             }
         }
     ).catch(
         err => {
             res.status(400).send(err);
         }
-    )
+        )
 });
 
 router.get('/footer', function (req, res) {
@@ -30,13 +66,13 @@ router.get('/footer', function (req, res) {
 
     ans.then(
         oData => {
-            if (oData.result.length <= 3){
-                
+            if (oData.result.length <= 3) {
+
                 res.json(oData.result);
             } else {
                 var aPopulars = oData.result.filter(
                     (elem, idx) => {
-                        var rating = elem.Rating / elem.Raters;
+                        var rating = elem.Rating;
                         return rating > 3;
                     }
                 );
@@ -47,7 +83,7 @@ router.get('/footer', function (req, res) {
         }
     ).catch(
         err => res.status(400).send(err)
-    )
+        )
 });
 
 function getRandom(arr, n) {
@@ -64,21 +100,45 @@ function getRandom(arr, n) {
     return result;
 }
 
-router.get('/:id', function(req, res){
-    var sTemplate = "select * from poi where pid='%s'";
-    var sQuery = util.format(sTemplate, req.param('id'));
+router.get('/:id', function (req, res) {
+
+    var sQuery;
+    
+    if (req.decoded && req.decoded.payload && req.decoded.payload.Username) {
+        sQuery = util.format("select poi.PID as PID, [Views], Title, [Description], Category, Rating, Raters, ImageFileName, Username, [Order], DateSaved from poi left join (select * from favpoi where Username='%s') as foo on poi.pid=foo.pid where poi.pid=%s", req.decoded.payload.Username, req.param('id'));
+    } else {
+        sQuery = util.format("select * from poi where pid='%s'", req.param('id'));
+    }
 
     var ans = dbutils.execQuery(sQuery);
     ans.then(
         oData => {
+            dbutils.calcFavorite(oData);
             if (oData.result.length) res.json(oData.result[0]);
-            else res.json({success: true, message: 'No such POI. Invalid ID ' + req.param('id')})
+            else res.json({ success: true, message: 'No such POI. Invalid ID ' + req.param('id') })
         }
     ).catch(
         err => {
-            res.status(400).send({message: false, error: err});
+            res.status(400).send({ message: false, error: err });
         }
-    )
+        )
+})
+
+router.get('/:id/lastreviews', function (req, res) {
+    var sTemplate = "select top 2 * from review where pid=%s order by date desc";
+    var sQuery = util.format(sTemplate, req.param('id'));
+    var ans = dbutils.execQuery(sQuery);
+
+    ans.then(
+        oData => {
+            if (oData.result.length) res.json(oData.result);
+            else res.json({ success: false, message: 'No reviews found for POI with ID ' + req.param('id') });
+        }
+    ).catch(
+        err => {
+            res.status(400).send({ success: false, message: err });
+        }
+        )
 })
 
 module.exports = router;
