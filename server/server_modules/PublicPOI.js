@@ -73,7 +73,7 @@ router.get('/footer', function (req, res) {
                 var aPopulars = oData.result.filter(
                     (elem, idx) => {
                         var rating = elem.Rating;
-                        return rating > 3;
+                        return rating >= 0; //CHANGE AFTER POIS HAVE REAL RATINGS!!!!!!!!!!!!!!!!
                     }
                 );
 
