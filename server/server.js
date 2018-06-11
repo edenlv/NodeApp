@@ -5,7 +5,7 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var morgan = require('morgan');
-
+var cors = require('cors');
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 var Users = require('./server_modules/Users'); // get our users model
 var poi = require('./server_modules/POI')
@@ -20,6 +20,7 @@ var port = process.env.PORT || 8080;
 // use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(cors());
 
 // use morgan to log requests to the console
 app.use(morgan('dev'));
