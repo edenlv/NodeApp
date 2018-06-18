@@ -100,6 +100,11 @@ router.get('/lastsaved', function (req, res) {
     ans.then(
         oData => {
             if (oData.result.length) {
+                oData.result.forEach(
+                    (elem,idx) => {
+                        elem.isFavorite = true;
+                    }
+                )
                 res.json(oData.result);
             } else {
                 res.json({ message: "You haven't saved any POIs yet." });
@@ -160,17 +165,25 @@ router.post('/setfavorder', function (req, res) {
 
 router.get('/recommended', function (req, res) {
     var sTemplate = "select * from poi where pid="
-        + "(SELECT top 1 PID FROM POI WHERE Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 1) order by Rating desc)"
+        + "(SELECT top 1 PID FROM POI WHERE PID NOT IN (select pid from favpoi where Username='%s') and Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 1) order by Rating desc)"
         + "OR pid="
-        + "(SELECT top 1 PID FROM POI WHERE Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 2) order by Rating desc)";
+        + "(SELECT top 1 PID FROM POI WHERE PID NOT IN (select pid from favpoi where Username='%s') and Category=(SELECT Category FROM (SELECT ROW_NUMBER() OVER (ORDER BY Category ASC) AS rownumber, Category FROM UserCategory where Username='%s') as foo where rownumber = 2) order by Rating desc)";
 
-    var sQuery = util.format(sTemplate, req.decoded.payload.Username, req.decoded.payload.Username);
+
+    var sQuery = util.format(sTemplate, req.decoded.payload.Username, req.decoded.payload.Username, req.decoded.payload.Username, req.decoded.payload.Username);
 
     var ans = dbutils.execQuery(sQuery);
 
     ans.then(
         oData => {
-            if (oData.count === 2) res.json(oData.result);
+            if (oData.count > 0) {
+                oData.result.forEach(
+                    (elem, idx) => {
+                        elem.isFavorite = false;
+                    }
+                )
+                res.json(oData.result);
+            }
             else res.status(400).send({ success: false, message: "Could not find recommended POIs for you." });
         }
     ).catch(
