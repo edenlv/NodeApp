@@ -194,7 +194,7 @@ router.get('/recommended', function (req, res) {
 });
 
 router.get('/favlist', function (req, res) {
-    var sTemplate = "select poi.PID, [Views], Title, [Description], Category, Rating, Raters from poi, favpoi where Username='%s' and poi.pid=favpoi.pid order by [Order]";
+    var sTemplate = "select poi.PID, [Views], Title, [Description], Category, Rating, Raters, [Order] from poi, favpoi where Username='%s' and poi.pid=favpoi.pid order by [Order]";
     var sQuery = util.format(sTemplate, req.decoded.payload.Username);
     var ans = dbutils.execQuery(sQuery);
 
