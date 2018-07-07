@@ -105,7 +105,7 @@ router.get('/:id', function (req, res) {
     var sQuery;
 
     if (req.decoded && req.decoded.payload && req.decoded.payload.Username) {
-        sQuery = util.format("select poi.PID as PID, [Views], Title, [Description], Category, Rating, Raters, ImageFileName, Username, [Order], DateSaved from poi left join (select * from favpoi where Username='%s') as foo on poi.pid=foo.pid where poi.pid=%s", req.decoded.payload.Username, req.param('id'));
+        sQuery = util.format("select poi.PID as PID, [Views], Title, [Description], Category, Rating, Raters, ImageFileName, Username, [Order], DateSaved, Longitude, Latitude from poi left join (select * from favpoi where Username='%s') as foo on poi.pid=foo.pid where poi.pid=%s", req.decoded.payload.Username, req.param('id'));
     } else {
         sQuery = util.format("select * from poi where pid='%s'", req.param('id'));
     }
